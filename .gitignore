@@ -1,0 +1,7 @@
+# build
+bin/
+dist/
+*.log
+.env
+# k8s
+kubeconfig
