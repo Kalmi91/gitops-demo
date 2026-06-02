@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: demo
+
+resources:
+  - deployment.yaml
+  - service.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: gitops-demo
+
+# CI bumps `newTag` to the git SHA on every push to main; ArgoCD then syncs the
+# new image into the cluster. This single line is the GitOps mutation point.
+images:
+  - name: ghcr.io/kalmi91/gitops-demo
+    newTag: latest
