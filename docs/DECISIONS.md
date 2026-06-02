@@ -42,3 +42,17 @@ points.
 - **Decision:** Agent authors code + offline checks; user runs Docker/kind/ArgoCD.
 - **Consequence:** Token-burn build sessions stay productive; never block.
 - **Trade-off:** End-to-end verification deferred to the user's `make up`.
+
+## ADR-007 — Image-tag bump via commit-back, not argocd-image-updater
+- **Context:** ArgoCD syncs *what Git says*. After CI pushes `image:sha`, Git
+  must reference that new tag for the deploy to happen. Two ways: a CI job that
+  rewrites the manifest and commits back, or `argocd-image-updater` watching the
+  registry.
+- **Decision:** CI `bump-manifest` job edits `k8s/kustomization.yaml`'s `newTag`
+  to `sha-<commit>` and commits with `[skip ci]` (which prevents a rebuild loop,
+  since the bump touches only `k8s/` — no new image to build).
+- **Consequence:** The whole loop is plain Git — the bump commit is the audit
+  trail; rollback = `git revert`; no extra in-cluster controller to run.
+- **Trade-off:** A bot commit per release; needs `contents: write`. Image-updater
+  would avoid the commit but adds a component and registry-poll config — overkill
+  for a single-app demo whose *point* is showing the Git-driven loop.

@@ -60,3 +60,34 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ github.sha }}
+
+  # The GitOps loop: rewrite the manifest's image tag in Git so ArgoCD syncs the
+  # freshly-pushed image into the cluster. Commit-back over argocd-image-updater
+  # (ADR-007). Only on main; `[skip ci]` on the bump commit prevents a rebuild
+  # loop (the bump touches k8s/ only — no new image to build).
+  bump-manifest:
+    needs: build-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump image tag in k8s/kustomization.yaml
+        run: |
+          # metadata-action's type=sha,format=long emits "sha-<full-sha>".
+          NEW_TAG="sha-${GITHUB_SHA}"
+          sed -i "s|^\( *newTag:\).*|\1 ${NEW_TAG}|" k8s/kustomization.yaml
+          grep -n 'newTag:' k8s/kustomization.yaml
+
+      - name: Commit the bump
+        run: |
+          if git diff --quiet; then
+            echo "No change — manifest already at this tag."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: bump image to sha-${GITHUB_SHA} [skip ci]"
+          git push
