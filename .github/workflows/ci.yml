@@ -24,9 +24,33 @@ jobs:
       - name: go test
         run: go test ./...
 
+  hadolint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: app/Dockerfile
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kustomize + kubeconform
+        run: |
+          curl -fsSL -o /tmp/kustomize.tar.gz \
+            https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
+          tar -xzf /tmp/kustomize.tar.gz -C /usr/local/bin kustomize
+          curl -fsSL -o /tmp/kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar -xzf /tmp/kubeconform.tar.gz -C /tmp kubeconform
+      - name: kubeconform (rendered manifests)
+        run: kustomize build k8s/ | /tmp/kubeconform -summary -strict -ignore-missing-schemas
+
   build-push:
     # Build always (validates the Dockerfile on PRs); push only on main.
-    needs: test
+    needs: [test, hadolint, manifests]
     runs-on: ubuntu-latest
     permissions:
       contents: read
