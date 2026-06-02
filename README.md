@@ -1,5 +1,7 @@
 # gitops-demo
 
+[![ci](https://github.com/kalmi91/gitops-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/kalmi91/gitops-demo/actions/workflows/ci.yml)
+
 Portfolio project #2 of 3 for the CDMX DevOps job search. Goal: demonstrate a
 **GitOps delivery pipeline** — push code, CI builds + tests + pushes a container
 image, and **ArgoCD** continuously syncs the desired state from Git into a
