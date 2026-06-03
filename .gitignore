@@ -3,5 +3,9 @@ bin/
 dist/
 *.log
 .env
+app/gitops-demo
 # k8s
 kubeconfig
+# local-only working docs
+BUILD.md
+docs/PORTFOLIO.md
