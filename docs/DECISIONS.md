@@ -1,7 +1,6 @@
 # Decisions (ADR-lite)
 
-Context → decision → consequence → trade-off. Doubles as interview talking
-points.
+Context → decision → consequence → trade-off.
 
 ## ADR-001 — kind instead of a managed cluster
 - **Context:** Need Kubernetes to run ArgoCD + the app, at $0.
@@ -36,14 +35,7 @@ points.
 - **Consequence:** Small, fewer CVEs.
 - **Trade-off:** Slightly more Dockerfile complexity.
 
-## ADR-006 — Agent writes code, user runs the runtime
-- **Context:** The Claude Code sandbox has no Docker socket and can't start a
-  daemon (bwrap namespace).
-- **Decision:** Agent authors code + offline checks; user runs Docker/kind/ArgoCD.
-- **Consequence:** Token-burn build sessions stay productive; never block.
-- **Trade-off:** End-to-end verification deferred to the user's `make up`.
-
-## ADR-007 — Image-tag bump via commit-back, not argocd-image-updater
+## ADR-006 — Image-tag bump via commit-back, not argocd-image-updater
 - **Context:** ArgoCD syncs *what Git says*. After CI pushes `image:sha`, Git
   must reference that new tag for the deploy to happen. Two ways: a CI job that
   rewrites the manifest and commits back, or `argocd-image-updater` watching the

@@ -2,7 +2,7 @@
 
 ArgoCD is installed from the **upstream stable manifests** (no fork, no Helm) so
 the setup is the canonical one every ArgoCD user recognises. `make up` does all
-of this; the steps are spelled out here for the portfolio reader.
+of this; the steps are spelled out here for reference.
 
 ## 1. Install ArgoCD into the cluster
 

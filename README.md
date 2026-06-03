@@ -2,8 +2,7 @@
 
 [![ci](https://github.com/kalmi91/gitops-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/kalmi91/gitops-demo/actions/workflows/ci.yml)
 
-Portfolio project #2 of 3 for the CDMX DevOps job search. Goal: demonstrate a
-**GitOps delivery pipeline** — push code, CI builds + tests + pushes a container
+Demonstrates a **GitOps delivery pipeline** — push code, CI builds + tests + pushes a container
 image, and **ArgoCD** continuously syncs the desired state from Git into a
 Kubernetes cluster.
 
@@ -36,11 +35,10 @@ flowchart LR
 The point of GitOps: **Git is the single source of truth.** Nobody runs
 `kubectl apply` by hand — ArgoCD reconciles the cluster to match the repo.
 
-## Division of labor
+## Running it
 
-Same as infra-lab: the agent **writes code**; the Docker daemon, kind, and
-ArgoCD **run on the host shell** (no Docker socket inside the Claude Code
-sandbox). See `scripts/bootstrap.sh` + the *Runtime checklist* in `BUILD.md`.
+The Docker daemon, kind, and ArgoCD run on the host shell. See
+`scripts/bootstrap.sh` to install the tooling.
 
 ## Usage
 
@@ -67,6 +65,4 @@ gitops-demo/
 
 ## More docs
 
-- [`BUILD.md`](BUILD.md) — live status %, build queue, build contract (load this to resume).
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — why each choice (ADR-lite).
-- [`docs/PORTFOLIO.md`](docs/PORTFOLIO.md) — CV bullets, interview points, demo script.
