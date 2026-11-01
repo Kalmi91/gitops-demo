@@ -14,4 +14,4 @@ commonLabels:
 # new image into the cluster. This single line is the GitOps mutation point.
 images:
   - name: ghcr.io/kalmi91/gitops-demo
-    newTag: sha-624086620da57daf561047c7dd3e79e01bc01a1b
+    newTag: sha-ee04dd613cdeea5866b542df6f9284936cb06622
