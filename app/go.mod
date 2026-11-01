@@ -1,3 +1,3 @@
 module github.com/kalmi91/gitops-demo
 
-go 1.23
+go 1.27

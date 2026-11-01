@@ -1,6 +1,6 @@
 # ArgoCD install + Application
 
-ArgoCD is installed from the **upstream stable manifests** (no fork, no Helm) so
+ArgoCD is installed from the **upstream manifests**, pinned to a release (no fork, no Helm) so
 the setup is the canonical one every ArgoCD user recognises. `make up` does all
 of this; the steps are spelled out here for reference.
 
@@ -8,8 +8,10 @@ of this; the steps are spelled out here for reference.
 
 ```bash
 kubectl create namespace argocd
-kubectl apply -n argocd -f \
-  https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+# --server-side: the Application CRDs are larger than the 256 KiB annotation
+# limit that client-side apply would hit.
+kubectl apply -n argocd --server-side --force-conflicts -f \
+  https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.6/manifests/install.yaml
 kubectl rollout status -n argocd deploy/argocd-server --timeout=300s
 ```
 
