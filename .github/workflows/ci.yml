@@ -15,10 +15,11 @@ jobs:
       run:
         working-directory: app
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
-          go-version: "1.23"
+          go-version: "1.27.3"
+          cache: false # no external deps, so no go.sum to key a cache on
       - name: go vet
         run: go vet ./...
       - name: go test
@@ -27,23 +28,23 @@ jobs:
   hadolint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: app/Dockerfile
 
   manifests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install kustomize + kubeconform
         run: |
           curl -fsSL -o /tmp/kustomize.tar.gz \
             https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
           tar -xzf /tmp/kustomize.tar.gz -C /usr/local/bin kustomize
           curl -fsSL -o /tmp/kubeconform.tar.gz \
-            https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+            https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
           tar -xzf /tmp/kubeconform.tar.gz -C /tmp kubeconform
       - name: kubeconform (rendered manifests)
         run: kustomize build k8s/ | /tmp/kubeconform -summary -strict -ignore-missing-schemas
@@ -56,11 +57,11 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Log in to GHCR
         if: github.event_name == 'push'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -68,7 +69,7 @@ jobs:
 
       - name: Image metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE }}
           tags: |
@@ -76,7 +77,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: app
           push: ${{ github.event_name == 'push' }}
@@ -93,25 +94,44 @@ jobs:
     needs: build-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # One bump job at a time. The script below also starts from the current tip
+    # of main and retries, so a commit landing in between cannot break the push.
+    concurrency:
+      group: bump-manifest
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the step below compares this commit with the current main
 
-      - name: Bump image tag in k8s/kustomization.yaml
+      - name: Bump image tag in k8s/kustomization.yaml and push
         run: |
           # metadata-action's type=sha,format=long emits "sha-<full-sha>".
           NEW_TAG="sha-${GITHUB_SHA}"
-          sed -i "s|^\( *newTag:\).*|\1 ${NEW_TAG}|" k8s/kustomization.yaml
-          grep -n 'newTag:' k8s/kustomization.yaml
-
-      - name: Commit the bump
-        run: |
-          if git diff --quiet; then
-            echo "No change — manifest already at this tag."
-            exit 0
-          fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "chore: bump image to sha-${GITHUB_SHA} [skip ci]"
-          git push
+          for attempt in 1 2 3; do
+            git fetch origin main
+            # A newer push to main builds its own image and bumps the tag in its own
+            # run; bumping to this older SHA would move the tag backwards.
+            ahead=$(git log --format=%s "${GITHUB_SHA}..origin/main" | grep -v '\[skip ci\]' || true)
+            if [ -n "$ahead" ]; then
+              echo "main is ahead of ${GITHUB_SHA}, the newer push bumps the tag in its own run."
+              exit 0
+            fi
+            # Start from the current tip, so the push below is a fast-forward.
+            git reset --hard origin/main
+            sed -i "s|^\( *newTag:\).*|\1 ${NEW_TAG}|" k8s/kustomization.yaml
+            grep -n 'newTag:' k8s/kustomization.yaml
+            if git diff --quiet; then
+              echo "No change — manifest already at this tag."
+              exit 0
+            fi
+            git commit -am "chore: bump image to ${NEW_TAG} [skip ci]"
+            git push origin HEAD:main && exit 0
+            echo "push rejected (main moved), retrying ($attempt/3)"
+          done
+          echo "::error::could not push the bump after 3 attempts"
+          exit 1

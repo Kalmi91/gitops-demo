@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Multi-stage: build a static Go binary, ship it on distroless (~10MB, nonroot).
-FROM golang:1.23 AS build
+FROM golang:1.27.3 AS build
 WORKDIR /src
 
 # Cache modules first (no external deps today, but keeps the layer stable).
@@ -17,5 +17,5 @@ FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=build /out/app /app
 EXPOSE 8080
-USER nonroot:nonroot
+USER 65532:65532
 ENTRYPOINT ["/app"]

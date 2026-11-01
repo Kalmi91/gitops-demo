@@ -4,6 +4,7 @@ CLUSTER ?= gitops-demo
 ARGOCD_NS ?= argocd
 APP_NS ?= demo
 APP_NAME ?= gitops-demo
+ARGOCD_VERSION ?= v3.5.6
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -16,9 +17,9 @@ kind-up: ## Create the kind cluster
 	@kind get clusters | grep -qx $(CLUSTER) || kind create cluster --name $(CLUSTER)
 	kubectl cluster-info --context kind-$(CLUSTER)
 
-argocd-install: ## Install ArgoCD (upstream stable manifests)
+argocd-install: ## Install ArgoCD (upstream manifests, pinned)
 	kubectl create namespace $(ARGOCD_NS) --dry-run=client -o yaml | kubectl apply -f -
-	kubectl apply -n $(ARGOCD_NS) -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+	kubectl apply -n $(ARGOCD_NS) --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/$(ARGOCD_VERSION)/manifests/install.yaml
 	kubectl rollout status -n $(ARGOCD_NS) deploy/argocd-server --timeout=300s
 
 app: ## Apply the ArgoCD Application (points at this repo's k8s/ path)
