@@ -17,6 +17,7 @@ case ":$PATH:" in
 esac
 
 KIND_VERSION="v0.27.0"
+ARGOCD_VERSION="v3.5.6"
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
@@ -43,9 +44,9 @@ fi
 if have argocd; then
   echo "argocd: present"
 else
-  echo "argocd: installing latest"
+  echo "argocd: installing ${ARGOCD_VERSION}"
   curl -fsSL -o "$BIN/argocd" \
-    https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+    "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_VERSION}/argocd-linux-amd64"
   chmod +x "$BIN/argocd"
 fi
 

@@ -94,7 +94,8 @@ jobs:
     needs: build-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    # Serialise bumps: two quick pushes to main must not race on `git push`.
+    # One bump job at a time. The script below also starts from the current tip
+    # of main and retries, so a commit landing in between cannot break the push.
     concurrency:
       group: bump-manifest
       cancel-in-progress: false
@@ -102,21 +103,35 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the step below compares this commit with the current main
 
-      - name: Bump image tag in k8s/kustomization.yaml
+      - name: Bump image tag in k8s/kustomization.yaml and push
         run: |
           # metadata-action's type=sha,format=long emits "sha-<full-sha>".
           NEW_TAG="sha-${GITHUB_SHA}"
-          sed -i "s|^\( *newTag:\).*|\1 ${NEW_TAG}|" k8s/kustomization.yaml
-          grep -n 'newTag:' k8s/kustomization.yaml
-
-      - name: Commit the bump
-        run: |
-          if git diff --quiet; then
-            echo "No change — manifest already at this tag."
-            exit 0
-          fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "chore: bump image to sha-${GITHUB_SHA} [skip ci]"
-          git push
+          for attempt in 1 2 3; do
+            git fetch origin main
+            # A newer push to main builds its own image and bumps the tag in its own
+            # run; bumping to this older SHA would move the tag backwards.
+            ahead=$(git log --format=%s "${GITHUB_SHA}..origin/main" | grep -v '\[skip ci\]' || true)
+            if [ -n "$ahead" ]; then
+              echo "main is ahead of ${GITHUB_SHA}, the newer push bumps the tag in its own run."
+              exit 0
+            fi
+            # Start from the current tip, so the push below is a fast-forward.
+            git reset --hard origin/main
+            sed -i "s|^\( *newTag:\).*|\1 ${NEW_TAG}|" k8s/kustomization.yaml
+            grep -n 'newTag:' k8s/kustomization.yaml
+            if git diff --quiet; then
+              echo "No change — manifest already at this tag."
+              exit 0
+            fi
+            git commit -am "chore: bump image to ${NEW_TAG} [skip ci]"
+            git push origin HEAD:main && exit 0
+            echo "push rejected (main moved), retrying ($attempt/3)"
+          done
+          echo "::error::could not push the bump after 3 attempts"
+          exit 1
