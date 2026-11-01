@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Multi-stage: build a static Go binary, ship it on distroless (~10MB, nonroot).
-FROM golang:1.23 AS build
+FROM golang:1.27.3 AS build
 WORKDIR /src
 
 # Cache modules first (no external deps today, but keeps the layer stable).
