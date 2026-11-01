@@ -59,7 +59,7 @@ gitops-demo/
 ├── argocd/             # ArgoCD install notes + the Application manifest
 ├── .github/workflows/  # build + test + push image, bump manifest tag
 ├── scripts/            # bootstrap.sh (run on host)
-├── docs/               # DECISIONS.md, PORTFOLIO.md
+├── docs/               # DECISIONS.md
 └── Makefile
 ```
 
