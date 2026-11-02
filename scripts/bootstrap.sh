@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Installs the gitops-demo toolchain into ~/.local/bin and ensures Docker is
-# usable. Run once on the HOST shell (needs the Docker daemon + real sudo —
-# not the Claude Code sandbox).
+# usable. Run once on the HOST shell (needs the Docker daemon + real sudo).
 #
 #   ./scripts/bootstrap.sh
 #
