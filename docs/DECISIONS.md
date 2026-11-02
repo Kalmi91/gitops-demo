@@ -27,7 +27,8 @@ Context → decision → consequence → trade-off.
 - **Decision:** Tag images with `${{ github.sha }}`; the manifest references the
   SHA. `latest` only as a convenience pointer.
 - **Consequence:** Every deploy is traceable to a commit; rollbacks are trivial.
-- **Trade-off:** Manifest must be bumped per release (Q6 automates this).
+- **Trade-off:** Manifest must be bumped per release (the `bump-manifest` CI
+  job automates this, see ADR-006).
 
 ## ADR-005 — Multi-stage Dockerfile / minimal base
 - **Context:** Image hygiene is a visible skill.

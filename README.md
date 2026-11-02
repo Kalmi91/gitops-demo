@@ -14,7 +14,7 @@ Kubernetes cluster.
 
 | Piece | Tool | Skill |
 | ----- | ---- | ----- |
-| CI: build → test → push image | GitHub Actions + GHCR | pipeline authoring (closes the Jenkins-only gap) |
+| CI: build → test → push image | GitHub Actions + GHCR | pipeline authoring (test, lint, image build and push, manifest bump) |
 | Container | multi-stage Dockerfile | image hygiene, small images |
 | Desired state in Git | Kubernetes manifests (kustomize) | declarative k8s |
 | Continuous delivery | **ArgoCD** | GitOps, auto-sync, drift detection |
